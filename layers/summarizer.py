@@ -98,6 +98,7 @@ class dLSTM(nn.Module):
             # h: [2=num_layers, 1, hidden_size] (h from all layers)
             # c: [2=num_layers, 1, hidden_size] (c from all layers)
             (last_h, last_c), (h, c) = self.lstm_cell(x, (h, c))
+            # 내가 수정한 코드 / 아래 두 줄 수정
             x = last_h
             out_features.append(self.out(x))
         # list of seq_len '[1, hidden_size]-sized Variables'
