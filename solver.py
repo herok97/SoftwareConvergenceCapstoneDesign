@@ -45,10 +45,10 @@ class Solver(object):
 
             # Overview Parameters
             print(self.model)
-            print('Model Parameters')
-            for name, param in self.model.named_parameters():
-                print('\t' + name + '\t', list(param.size()))
-                print('\t train: ' + '\t', param.requires_grad)
+            # print('Model Parameters')
+            # for name, param in self.model.named_parameters():
+            #     print('\t' + name + '\t', list(param.size()))
+            #     print('\t train: ' + '\t', param.requires_grad)
 
             self.model.train()
 
@@ -92,7 +92,8 @@ class Solver(object):
                     self.train_loader, desc='Batch', ncols=80, leave=False)):
 
                 # 내가 수정한 코드 / 이미지 장수로 건너뛰기 일단 제한 없이
-                if image_features.size(1) > 100000:
+                tqdm.write(f'\n------{batch_i}th Batch: {image_features.size(1)} size')
+                if image_features.size(1) > 1000:
                     continue
 
                 # [batch_size=1, seq_len, 2048]

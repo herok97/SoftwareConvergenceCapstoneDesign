@@ -5,7 +5,7 @@ from pathlib import Path
 import pprint
 
 project_dir = Path(__file__).resolve().parent
-dataset_dir = Path('C:/Users/01079/video_summarization_data/h5_new/').resolve()
+dataset_dir = Path('C:\VS_data/').resolve()
 video_list = ['OVP', 'SumMe', 'TvSum']
 save_dir = Path('./results/save/')
 score_dir = Path('./results/score/')
@@ -52,9 +52,6 @@ def get_config(parse=True, **optional_kwargs):
     parser.add_argument('--video_type', type=str, default='OVP')
 
     # Model
-    parser.add_argument('--input_size', type=int, default=2048)
-    parser.add_argument('--hidden_size', type=int, default=500)
-    parser.add_argument('--num_layers', type=int, default=2)
     parser.add_argument('--summary_rate', type=float, default=0.3)
 
     # Train
@@ -62,7 +59,7 @@ def get_config(parse=True, **optional_kwargs):
     parser.add_argument('--clip', type=float, default=5.0)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--discriminator_lr', type=float, default=1e-4)
-    parser.add_argument('--discriminator_slow_start', type=int, default=0)
+    parser.add_argument('--discriminator_slow_start', type=int, default=15)
 
     # load epoch
     parser.add_argument('--epoch', type=int, default=49)

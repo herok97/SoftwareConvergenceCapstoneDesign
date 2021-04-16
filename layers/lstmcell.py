@@ -7,9 +7,8 @@ import torch.nn as nn
 
 class StackedLSTMCell(nn.Module):
 
-    def __init__(self, num_layers, input_size, rnn_size, dropout=0.0):
+    def __init__(self, num_layers, input_size, rnn_size):
         super(StackedLSTMCell, self).__init__()
-        self.dropout = nn.Dropout(dropout)
         self.num_layers = num_layers
         self.layers = nn.ModuleList()
 
@@ -35,8 +34,6 @@ class StackedLSTMCell(nn.Module):
 
             # x for next layer
             x = h_i
-            if i + 1 != self.num_layers:
-                x = self.dropout(x)
             h_list += [h_i]
             c_list += [c_i]
 

@@ -12,7 +12,7 @@ class sLSTM(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layer, bidirectional=True)
         self.out = nn.Sequential(
             nn.Linear(hidden_size * 2, 1),
-            nn.Softmax()) # 내가 수정한 것 / 논문에서는 sigmoid 말고 softmax 사용했음
+            nn.Softmax(dim=1)) # 내가 수정한 것 / 논문에서는 sigmoid 말고 softmax 사용했음
 
     def forward(self, features):
         """
@@ -153,7 +153,6 @@ class VAE(nn.Module):
 
         # [num_layers, 1, hidden_size]
         h = self.reparameterize(h_mu, h_log_variance)
-        print("h, c", (h.shape, c.shape))
         # [seq_len, 1, hidden_size]
         decoded_features = self.d_lstm(seq_len, init_hidden=(h, c))
 
