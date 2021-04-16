@@ -38,16 +38,16 @@ class sLSTM(nn.Module):
         return scores
 
 class eLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layer=2):
+    def __init__(self):
         super().__init__()
         # input 1024 받아서 2048 unit의 hidden state
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layer)
+        self.lstm = nn.LSTM(1024, 2048, 2)
 
         # VAE에서 사용할 확률분호의 평균과 분산.
         # 분산은 이후에 log를 취하던데 log_var 를 KL_loss를 구할 때 사용하니까 그런듯
         # 근데 얘네 왜 forward 에서 사용안할까?
-        self.linear_mu = nn.Linear(hidden_size, hidden_size)
-        self.linear_var = nn.Linear(hidden_size, hidden_size)
+        self.linear_mu = nn.Linear(2048, 2048)
+        self.linear_var = nn.Linear(2048, 2048)
 
     # 인풋으로 [seq_len, 1, 1024]이 들어옴
     def forward(self, frame_features):
@@ -64,12 +64,12 @@ class eLSTM(nn.Module):
 
 
 class dLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers=2):
+    def __init__(self):
         super().__init__()
 
         # input param 순서가 조금 다름.
-        self.lstm_cell = StackedLSTMCell(num_layers, input_size, hidden_size)
-        self.out = nn.Linear(hidden_size, input_size)
+        self.lstm_cell = StackedLSTMCell(2, 2048, 2048)
+        self.out = nn.Linear(2048, 1024)
 
     def forward(self, seq_len, init_hidden):    #init_hidden은 eLSTM으로부터 받아오는 것 같음.
         """
@@ -98,17 +98,17 @@ class dLSTM(nn.Module):
             # h: [2=num_layers, 1, hidden_size] (h from all layers)
             # c: [2=num_layers, 1, hidden_size] (c from all layers)
             (last_h, last_c), (h, c) = self.lstm_cell(x, (h, c))
-            x = self.out(last_h)
-            out_features.append(last_h)
+            x = last_h
+            out_features.append(self.out(x))
         # list of seq_len '[1, hidden_size]-sized Variables'
         return out_features
 
 
 class VAE(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers=2):
+    def __init__(self):
         super().__init__()
-        self.e_lstm = eLSTM(input_size, hidden_size, num_layers)
-        self.d_lstm = dLSTM(input_size, hidden_size, num_layers)
+        self.e_lstm = eLSTM()
+        self.d_lstm = dLSTM()
 
         self.softplus = nn.Softplus()
 
@@ -152,7 +152,7 @@ class VAE(nn.Module):
 
         # [num_layers, 1, hidden_size]
         h = self.reparameterize(h_mu, h_log_variance)
-
+        print("h, c", (h.shape, c.shape))
         # [seq_len, 1, hidden_size]
         decoded_features = self.d_lstm(seq_len, init_hidden=(h, c))
 
@@ -164,11 +164,11 @@ class VAE(nn.Module):
 
 
 class Summarizer(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers=2):
+    def __init__(self):
         super().__init__()
-        self.s_lstm = sLSTM(input_size, hidden_size, num_layers)
+        self.s_lstm = sLSTM(1024, 2048, 2)
 
-        self.vae = VAE(input_size, hidden_size, num_layers)
+        self.vae = VAE()
 
     def forward(self, image_features, uniform=False):
         # Apply weights

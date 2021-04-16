@@ -21,15 +21,9 @@ class Solver(object):
     def build(self):
 
         # Build Modules
-        self.linear_compress = nn.Linear(2048, 500).cuda()
-        self.summarizer = Summarizer(
-            input_size=500,
-            hidden_size=500,
-            num_layers=2).cuda()
-        self.discriminator = Discriminator(
-            input_size=500,
-            hidden_size=500,
-            num_layers=2).cuda()
+        self.linear_compress = nn.Linear(2048, 1024).cuda()
+        self.summarizer = Summarizer().cuda()
+        self.discriminator = Discriminator().cuda()
         self.model = nn.ModuleList([
             self.linear_compress, self.summarizer, self.discriminator])
 
@@ -59,13 +53,6 @@ class Solver(object):
             self.model.train()
 
             self.writer = TensorboardWriter(self.config.log_dir)
-
-
-        # 내가 추가한 코드 / eval 여기서 정의
-        # elif self.config.mode == 'test':
-        #     pass
-        # 여기서 test 할 모델 파일 불러들이고 eval() 모드로 바꾸고
-        # forward 진행하는것 짜면 될듯?
 
     @staticmethod
     def freeze_model(module):
