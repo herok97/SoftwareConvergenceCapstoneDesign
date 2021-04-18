@@ -1,11 +1,11 @@
 import torch.nn as nn
 
 class cLSTM(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size, c_hidden):
         """Discriminator LSTM"""
         super().__init__()
 
-        self.lstm = nn.LSTM(1024, 1024, 2)
+        self.lstm = nn.LSTM(input_size, c_hidden, 2)
 
     def forward(self, features, init_hidden=None):
         """
@@ -26,12 +26,12 @@ class cLSTM(nn.Module):
         return last_h
 
 class Discriminator(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size, c_hidden):
         """Discriminator: cLSTM + output projection to probability"""
         super().__init__()
-        self.cLSTM = cLSTM()
+        self.cLSTM = cLSTM(input_size, c_hidden)
         self.out = nn.Sequential(
-            nn.Linear(1024, 1),
+            nn.Linear(c_hidden, 1),
             nn.Sigmoid())
 
     def forward(self, features):

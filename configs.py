@@ -59,7 +59,7 @@ def get_config(parse=True, **optional_kwargs):
     parser.add_argument('--clip', type=float, default=5.0)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--discriminator_lr', type=float, default=1e-4)
-    parser.add_argument('--discriminator_slow_start', type=int, default=15)
+    parser.add_argument('--discriminator_slow_start', type=int, default=0)
 
     # load epoch
     parser.add_argument('--epoch', type=int, default=49)

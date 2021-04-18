@@ -42,7 +42,8 @@ class VideoData(Dataset):
 
 def get_loader(root, mode):
     if mode.lower() == 'train':
-        return DataLoader(VideoData(root), batch_size=1)
+        # 내가 수정한 부분 / pin_memory 설정 => cached memory 삭제할 필요가 없음
+        return DataLoader(VideoData(root), batch_size=1, pin_memory=True)
     else:
         return VideoData(root, with_name=True)
 

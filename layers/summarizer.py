@@ -6,13 +6,13 @@ from .lstmcell import StackedLSTMCell
 
 class sLSTM(nn.Module):
     # input feature vector : (seq_len, 1024)
-    def __init__(self, input_size, hidden_size, num_layer=2):
+    def __init__(self, input_size, s_hidden, num_layer=2):
         super().__init__()
 
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layer, bidirectional=True)
+        self.lstm = nn.LSTM(input_size, s_hidden, num_layer, bidirectional=True)
         self.out = nn.Sequential(
-            nn.Linear(hidden_size * 2, 1),
-            nn.Softmax(dim=1)) # 내가 수정한 것 / 논문에서는 sigmoid 말고 softmax 사용했음
+            nn.Linear(s_hidden * 2, 1),
+            nn.Sigmoid())# SUM-GAN_sup 에서는 softmax 사용
 
     def forward(self, features):
         """
@@ -31,23 +31,21 @@ class sLSTM(nn.Module):
         # h_n 과 c_n 은 둘 다 shape of (batch_size, num_layers, hidden_size) 를 가짐
         # [seq_len, 1, 2048]
         features, (h_n, c_n) = self.lstm(features)
-
         # [seq_len, 2048] => [seq_len, 1, 2048] => [seq_len, 1, 1]
         scores = self.out(features.squeeze(1))
-
         return scores
 
 class eLSTM(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size, e_hidden, d_hidden):
         super().__init__()
         # input 1024 받아서 2048 unit의 hidden state
-        self.lstm = nn.LSTM(1024, 2048, 2)
+        self.lstm = nn.LSTM(input_size, e_hidden, 2)
 
         # VAE에서 사용할 확률분호의 평균과 분산.
         # 분산은 이후에 log를 취하던데 log_var 를 KL_loss를 구할 때 사용하니까 그런듯
         # 근데 얘네 왜 forward 에서 사용안할까?
-        self.linear_mu = nn.Linear(2048, 2048)
-        self.linear_var = nn.Linear(2048, 2048)
+        self.linear_mu = nn.Linear(e_hidden, e_hidden)
+        self.linear_var = nn.Linear(e_hidden, e_hidden)
 
     # 인풋으로 [seq_len, 1, 1024]이 들어옴
     def forward(self, frame_features):
@@ -64,12 +62,12 @@ class eLSTM(nn.Module):
 
 
 class dLSTM(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size, e_hidden, d_hidden):
         super().__init__()
 
         # input param 순서가 조금 다름.
-        self.lstm_cell = StackedLSTMCell(2, 2048, 2048)
-        self.out = nn.Linear(2048, 1024)
+        self.lstm_cell = StackedLSTMCell(2, e_hidden, d_hidden)
+        self.out = nn.Linear(d_hidden, input_size)
 
     def forward(self, seq_len, init_hidden):    #init_hidden은 eLSTM으로부터 받아오는 것 같음.
         """
@@ -106,12 +104,10 @@ class dLSTM(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size, e_hidden, d_hidden):
         super().__init__()
-        self.e_lstm = eLSTM()
-        self.d_lstm = dLSTM()
-
-        self.softplus = nn.Softplus()
+        self.e_lstm = eLSTM(input_size, e_hidden, d_hidden)
+        self.d_lstm = dLSTM(input_size, e_hidden, d_hidden)
 
     def reparameterize(self, mu, log_variance):
         """Sample z via reparameterization trick
@@ -124,7 +120,10 @@ class VAE(nn.Module):
         std = torch.exp(0.5 * log_variance)
 
         # e ~ N(0,1) # std.size() : [2, 2048]
-        epsilon = Variable(torch.randn(std.size())).cuda()
+
+        # 내가 수정한 코드 GPU에 한 번에 올리기
+        # epsilon = Variable(torch.randn(std.size())).cuda()
+        epsilon = Variable(torch.randn(std.size(), device=torch.device('cuda:0')))
 
         # [num_layers, 1, hidden_size]
         return (mu + epsilon * std).unsqueeze(1)
@@ -149,7 +148,10 @@ class VAE(nn.Module):
         h_mu = self.e_lstm.linear_mu(h)
 
         # 의문: 여기서 왜 softplus 사용하는지 설명 안해줌!?
-        h_log_variance = torch.log(self.softplus(self.e_lstm.linear_var(h)))
+        # 내가 수정한 코드 / softplus 없앴음
+        # h_log_variance = torch.log(self.e_lstm.linear_var(h))
+        # 내가 수정한 코드 / 여기서 미리 로그를 씌우지 말았어야죠 앞에다가 softplus를 할게 아니라.
+        h_log_variance = self.e_lstm.linear_var(h)
 
         # [num_layers, 1, hidden_size]
         h = self.reparameterize(h_mu, h_log_variance)
@@ -164,27 +166,25 @@ class VAE(nn.Module):
 
 
 class Summarizer(nn.Module):
-    def __init__(self):
+    def __init__(self, input_size, s_hidden, e_hidden, d_hidden):
         super().__init__()
-        self.s_lstm = sLSTM(1024, 2048, 2)
+        self.s_lstm = sLSTM(input_size, s_hidden, 2)
 
-        self.vae = VAE()
+        self.vae = VAE(input_size, e_hidden, d_hidden)
 
     def forward(self, image_features, uniform=False):
         # Apply weights
         if not uniform:
             # [seq_len, 1]
             scores = self.s_lstm(image_features)
-
-            # [seq_len, 1, hidden_size]
+            # [seq_len, 1, 2048] * [seq_len, 1, 1]
             weighted_features = image_features * scores.view(-1, 1, 1)
         else:
             seq_len = image_features.size(0)
-            scores = torch.rand(seq_len, 1, 1).cuda()
+            scores = torch.rand(seq_len, 1, 1, device=torch.device('cuda:0'))
             # 내가 수정한 코드 / uniform distribute 에서 추출
-            # 의문: 내 생각에는 여기에 0.3? 씩이라도 붙여야 할 것 같은데..
+            # 의문: 내 생각에는 여기에 0.3? 씩이라도 붙여야 할 것 같은데.. => uniform distribution 으로 붙임
             weighted_features = image_features * scores
-
         h_mu, h_log_variance, decoded_features = self.vae(weighted_features)
 
         return scores, h_mu, h_log_variance, decoded_features
