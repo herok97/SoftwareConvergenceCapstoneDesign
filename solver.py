@@ -2,15 +2,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
-from torch.cuda import amp
-from torchsummary import summary as summary_
 import numpy as np
 import json
 from tqdm import tqdm, trange
 from layers.summarizer import Summarizer
 from layers.discriminator import Discriminator
 from utils import TensorboardWriter
-
 
 class Solver(object):
     def __init__(self, config=None, train_loader=None, test_loader=None):
@@ -20,16 +17,16 @@ class Solver(object):
         self.test_loader = test_loader
 
     def build(self):
+        torch.cuda.empty_cache()
         # 내가 추가한 코드 AMP
         self.scalar = torch.cuda.amp.GradScaler()
 
         # Build Modules
-        self.linear_compress = nn.Linear(2048, 1024).cuda()
+        self.linear_compress = nn.Linear(1024, 1024).cuda()
         self.summarizer = Summarizer(input_size=1024, s_hidden=1024, e_hidden=2048, d_hidden=2048).cuda()
         self.discriminator = Discriminator(input_size=1024, c_hidden=1024).cuda()
         self.model = nn.ModuleList([
             self.linear_compress, self.summarizer, self.discriminator])
-
 
         if self.config.mode == 'train':
             # Build Optimizers
@@ -47,6 +44,9 @@ class Solver(object):
                 + list(self.linear_compress.parameters()),
                 lr=self.config.discriminator_lr)
 
+            # 저장된 모델 불러와서 이어서 학습
+            if self.config.pre_trained:
+                self.model.load_state_dict(torch.load(self.config.model_dir))
 
             # Overview Parameters
             print(self.model)
@@ -88,7 +88,19 @@ class Solver(object):
 
     def train(self):
         step = 0
-        for epoch_i in trange(self.config.n_epochs, desc='Epoch', ncols=80):
+        # 이어서 학습하려면 epochs를 이어서 계산
+        if self.config.pre_trained:
+            md = self.config.model_dir
+            n_epochs = int(md[md.find('epoch-') + 6:md.find('pkl') - 1])
+            epochs = tqdm(range(n_epochs, n_epochs + self.config.n_epochs), desc='Epoch', ncols=80)
+        else:
+            n_epochs = self.config.n_epochs
+            epochs = tqdm(range(n_epochs), desc='Epoch', ncols=80)
+        print(n_epochs)
+
+        # tqdm 설정
+
+        for epoch_i in epochs:
             s_e_loss_history = []
             d_loss_history = []
             c_loss_history = []
@@ -97,12 +109,12 @@ class Solver(object):
 
                 # 내가 수정한 코드 / 이미지 장수로 건너뛰기 일단 제한 없이
                 tqdm.write(f'\n------{batch_i}th Batch: {image_features.size(1)} size')
-                if image_features.size(1) > 5000:
-                    continue
+                # if image_features.size(1) > 15000:
+                # continue
 
                 # [batch_size=1, seq_len, 2048]
                 # [seq_len, 2048]
-                image_features = image_features.view(-1, 2048)
+                image_features = image_features.view(-1, 1024)
 
                 # [seq_len, 2048]
                 image_features_ = Variable(image_features).cuda()
@@ -134,15 +146,15 @@ class Solver(object):
                     prior_loss = self.prior_loss(h_mu, h_log_variance)
                     sparsity_loss = self.sparsity_loss(scores)
                     s_e_loss = reconstruction_loss + prior_loss + sparsity_loss
-
+                    torch.cuda.empty_cache()
                 tqdm.write(
-                   f'recon loss {reconstruction_loss.data:.3f}, prior loss: {prior_loss.data:.3f}, sparsity loss: {sparsity_loss.data:.3f}')
+                    f'recon loss {reconstruction_loss.data:.3f}, prior loss: {prior_loss.data:.3f}, sparsity loss: {sparsity_loss.data:.3f}')
 
                 # pytorch는 backpropagation 과정 중 값을 축적하기 떄문이라는데 잘 모르겠음
                 self.s_e_optimizer.zero_grad()
 
                 # 내가 추가한 코드 / amp
-                self.scalar.scale(s_e_loss).backward() #retain_graph=True)
+                self.scalar.scale(s_e_loss).backward()  # retain_graph=True)
 
                 # 논문과 다른 점 / Gradient cliping
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.clip)
@@ -150,6 +162,7 @@ class Solver(object):
                 self.scalar.update()
                 torch.cuda.empty_cache()
                 s_e_loss_history.append(s_e_loss.data)
+                torch.cuda.empty_cache()
 
 
                 # 내가 추가한 코드 / amp
@@ -180,19 +193,21 @@ class Solver(object):
                     d_loss = reconstruction_loss + gan_loss
 
                 self.d_optimizer.zero_grad()
-                self.scalar.scale(d_loss).backward() #retain_graph=True)
+                self.scalar.scale(d_loss).backward()  # retain_graph=True)
 
                 # Gradient cliping
-                torch.nn.utils.clip_grad_norm(self.model.parameters(), self.config.clip)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.clip)
                 self.scalar.step(self.d_optimizer)
                 self.scalar.update()
                 torch.cuda.empty_cache()
                 d_loss_history.append(d_loss.data)
-                #---- Train cLSTM ----#
-                if batch_i > self.config.discriminator_slow_start:
+                torch.cuda.empty_cache()
 
+
+                # ---- Train cLSTM ----#
+                if batch_i > self.config.discriminator_slow_start:
                     # Maximization
-                   # 내가 추가한 코드 / amp
+                    # 내가 추가한 코드 / amp
                     with torch.cuda.amp.autocast():
                         if self.config.verbose:
                             tqdm.write('Training cLSTM...')
@@ -216,7 +231,7 @@ class Solver(object):
                     self.scalar.scale(c_loss).backward()
 
                     # Gradient cliping
-                    torch.nn.utils.clip_grad_norm(self.model.parameters(), self.config.clip)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.clip)
 
                     self.scalar.step(self.c_optimizer)
                     self.scalar.update()
@@ -248,8 +263,9 @@ class Solver(object):
             self.writer.update_loss(d_loss, epoch_i, 'd_loss_epoch')
             self.writer.update_loss(c_loss, epoch_i, 'c_loss_epoch')
 
-            # Save parameters at checkpoint
-            ckpt_path = str(self.config.save_dir) + f'_epoch-{epoch_i}.pkl'
+            # Save parameters at checkpoint every five epoche
+            # if (epoch_i + 1)% 5 == 0 :
+            ckpt_path = str(self.config.save_dir) + f'_epoch-{epoch_i + 1}.pkl'
             tqdm.write(f'Save parameters at {ckpt_path}')
             torch.save(self.model.state_dict(), ckpt_path)
 
@@ -262,7 +278,6 @@ class Solver(object):
 
         for video_tensor, video_name in tqdm(
                 self.test_loader, desc='Evaluate', ncols=80, leave=False):
-
             # [seq_len, batch=1, 2048]
             video_tensor = video_tensor.view(-1, self.config.input_size)
 

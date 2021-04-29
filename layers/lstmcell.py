@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
 import torch.nn as nn
-
-# for decoder's LSTMCell
-#
+# StackedCell.py
 
 class StackedLSTMCell(nn.Module):
 

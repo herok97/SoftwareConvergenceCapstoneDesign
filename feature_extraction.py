@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import h5py
-from PIL import Image
 from torch.backends import cudnn
-from torchvision import transforms, models, datasets
+from torchvision import transforms, models
 import torch.nn as nn
 import torch
 from tqdm import tqdm
-from time import sleep
+
 class Rescale(object):
     """Rescale a image to a given size.
 
@@ -39,8 +38,8 @@ class ResNetFeature(nn.Module):
         super(ResNetFeature, self).__init__()
         if feature == 'resnet101':
             resnet = models.resnet101(pretrained=True)
-        else:
-            resnet = models.resnet152(pretrained=True)
+        elif feature == 'googlenet':
+            resnet = models.googlenet(pretrained=True)
         resnet.float()
         resnet.cuda()
         resnet.eval()
@@ -66,7 +65,7 @@ def get_vector(image):
     # Create a PyTorch tensor with the transformed image
     t_img = resnet_transform(image)
     # Create a vector of zeros that will hold our feature vector
-    my_embedding = torch.zeros(2048)
+    my_embedding = torch.zeros(1024)
 
     # Define a function that will copy the output of a layer
     def copy_data(m, i, o):
@@ -94,12 +93,14 @@ if __name__ == "__main__":
     print('기기:', device)
     print('graphic name:', torch.cuda.get_device_name())
 
-    model = ResNetFeature()
+    # googlenet 가져오기
+    model = ResNetFeature('googlenet')
+    print(model)
     layer = model._modules.get('pool5')
 
     import os
-    root_dir = "C:/Users/01079/video_summarization_data/only_video02/"
-    save_dir = "C:/Users/01079/video_summarization_data/h5_02/"
+    root_dir = "C:/Users/01079/video_summarization_data/only_video_new/"
+    save_dir = "C:/Users/01079/video_summarization_data/h5_googlenet/"
 
     category = ['OVP', 'SumMe', 'TvSum']
     tt = ['train', 'test']
@@ -133,9 +134,10 @@ if __name__ == "__main__":
                         try:
                             img = default_loader(img_name)
                         except:
-                            print("Wrong file fomrat, perhaps it was 0 bytes image file")
+                            print("Wrong file fomrat, perhaps it was` 0 bytes image file")
                             print("i'm gonna duplicate previous image")
-                        images.append(get_vector(img))
+                        feature_vector = get_vector(img)
+                        images.append(feature_vector)
                         progress_bar.update(1)  # update progress
 
                 # h5 file 생성
@@ -144,6 +146,6 @@ if __name__ == "__main__":
                     hf.create_dataset('pool5', data=result)
                     hf.close()
                     print("h5 file 생성 완료", "result:", result.shape)
-                
+
                 # 캐시 메모리 해제
                 torch.cuda.empty_cache()

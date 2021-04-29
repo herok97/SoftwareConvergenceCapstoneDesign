@@ -5,7 +5,7 @@ class cLSTM(nn.Module):
         """Discriminator LSTM"""
         super().__init__()
 
-        self.lstm = nn.LSTM(input_size, c_hidden, 2)
+        self.lstm = nn.LSTM(input_size, c_hidden, 2, dropout=0.5)
 
     def forward(self, features, init_hidden=None):
         """

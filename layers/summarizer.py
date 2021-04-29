@@ -3,13 +3,14 @@ import torch
 from torch.autograd import Variable
 from .lstmcell import StackedLSTMCell
 
+# Summarizer.py
 
 class sLSTM(nn.Module):
     # input feature vector : (seq_len, 1024)
     def __init__(self, input_size, s_hidden, num_layer=2):
         super().__init__()
 
-        self.lstm = nn.LSTM(input_size, s_hidden, num_layer, bidirectional=True)
+        self.lstm = nn.LSTM(input_size, s_hidden, num_layer, bidirectional=True, dropout=0.5)
         self.out = nn.Sequential(
             nn.Linear(s_hidden * 2, 1),
             nn.Sigmoid())# SUM-GAN_sup 에서는 softmax 사용
@@ -39,7 +40,8 @@ class eLSTM(nn.Module):
     def __init__(self, input_size, e_hidden, d_hidden):
         super().__init__()
         # input 1024 받아서 2048 unit의 hidden state
-        self.lstm = nn.LSTM(input_size, e_hidden, 2)
+
+        self.lstm = nn.LSTM(input_size, e_hidden, 2, dropout=0.5)
 
         # VAE에서 사용할 확률분호의 평균과 분산.
         # 분산은 이후에 log를 취하던데 log_var 를 KL_loss를 구할 때 사용하니까 그런듯
@@ -66,7 +68,7 @@ class dLSTM(nn.Module):
         super().__init__()
 
         # input param 순서가 조금 다름.
-        self.lstm_cell = StackedLSTMCell(2, e_hidden, d_hidden)
+        self.lstm_cell = StackedLSTMCell(2, input_size, d_hidden)
         self.out = nn.Linear(d_hidden, input_size)
 
     def forward(self, seq_len, init_hidden):    #init_hidden은 eLSTM으로부터 받아오는 것 같음.
@@ -83,8 +85,8 @@ class dLSTM(nn.Module):
         batch_size = init_hidden[0].size(1) # hidden state의 batch size 1
         hidden_size = init_hidden[0].size(2) # hidden state의 hideen_size 2048
 
-        # x [1, 2048] shape의 0 tensor를 할당
-        x = Variable(torch.zeros(batch_size, hidden_size)).cuda()
+        # x [1, 1024] shape의 0 tensor를 할당   # input size
+        x = Variable(torch.zeros(batch_size, 1024)).cuda()
 
         # h, c last state of eLSTM
         h, c = init_hidden
@@ -96,9 +98,9 @@ class dLSTM(nn.Module):
             # h: [2=num_layers, 1, hidden_size] (h from all layers)
             # c: [2=num_layers, 1, hidden_size] (c from all layers)
             (last_h, last_c), (h, c) = self.lstm_cell(x, (h, c))
-            # 내가 수정한 코드 / 아래 두 줄 수정
-            x = last_h
-            out_features.append(self.out(x))
+
+            x = self.out(last_h)
+            out_features.append(x)
         # list of seq_len '[1, hidden_size]-sized Variables'
         return out_features
 
@@ -157,7 +159,6 @@ class VAE(nn.Module):
         h = self.reparameterize(h_mu, h_log_variance)
         # [seq_len, 1, hidden_size]
         decoded_features = self.d_lstm(seq_len, init_hidden=(h, c))
-
         # [seq_len, 1, hidden_size]
         # reverse
         decoded_features.reverse()
