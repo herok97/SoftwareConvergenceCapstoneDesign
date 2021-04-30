@@ -3,10 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as ss
 import json
-
-# OVP   ->  keyframe -> keyshots
-# SumMe ->  keyshots
-# TvSum ->  importance score -> keyshots
+from sklearn.preprocessing import MinMaxScaler
 
 def minMaxScaling(data):
     m = min(data)

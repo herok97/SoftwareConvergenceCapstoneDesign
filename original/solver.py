@@ -23,8 +23,8 @@ class Solver(object):
 
         # Build Modules
         self.linear_compress = nn.Linear(1024, 1024).cuda()
-        self.summarizer = Summarizer(input_size=1024, s_hidden=1024, e_hidden=2048, d_hidden=2048).cuda()
-        self.discriminator = Discriminator(input_size=1024, c_hidden=1024).cuda()
+        self.summarizer = Summarizer(input_size=1024, s_hidden=512, e_hidden=512, d_hidden=512).cuda()
+        self.discriminator = Discriminator(input_size=1024, c_hidden=512).cuda()
         self.model = nn.ModuleList([
             self.linear_compress, self.summarizer, self.discriminator])
 
@@ -263,11 +263,11 @@ class Solver(object):
             self.writer.update_loss(d_loss, epoch_i, 'd_loss_epoch')
             self.writer.update_loss(c_loss, epoch_i, 'c_loss_epoch')
 
-            # Save parameters at checkpoint every five epoche
-            # if (epoch_i + 1)% 5 == 0 :
-            ckpt_path = str(self.config.save_dir) + f'_epoch-{epoch_i + 1}.pkl'
-            tqdm.write(f'Save parameters at {ckpt_path}')
-            torch.save(self.model.state_dict(), ckpt_path)
+            # Save parameters at checkpoint every five epoch
+            if (epoch_i + 1)% 5 == 0 :
+                ckpt_path = str(self.config.save_dir) + f'_epoch-{epoch_i + 1}.pkl'
+                tqdm.write(f'Save parameters at {ckpt_path}')
+                torch.save(self.model.state_dict(), ckpt_path)
 
     def evaluate(self, model_path):
         self.model.load_state_dict(torch.load(model_path))
