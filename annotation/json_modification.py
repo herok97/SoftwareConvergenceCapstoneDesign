@@ -1,6 +1,5 @@
 import numpy as np
-from cpd_nonlin import cpd_nonlin
-from cpd_auto import cpd_auto
+
 
 # dir information
 json_file_dir = ''
