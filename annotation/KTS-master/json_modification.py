@@ -21,9 +21,9 @@ feature_file_dir = 'C:/Users/01079/video_summarization_data/h5_googlenet'
 
 def get_cpt(features):
     k = np.dot(features, features.T)
-    print(f'\nMax number of cpt: {len(feature) // 60}')
+    print(f'\nMax number of cpt: {50}')
     # cps, _ = cpd_auto(k, len(features) // 60, 1)
-    cps, _ = cpd_auto(k, 10, 1)
+    cps, _ = cpd_auto(k, 50, 1)
     return cps
 
 
@@ -81,8 +81,7 @@ if __name__ == "__main__":
                 tqdm.write(f'{h5_file} features length: {len(feature)}')
 
                 # get change point
-                print(feature[:, :1].shape)
-                temporal_segment = get_cpt(feature[:, :64]).tolist()
+                temporal_segment = get_cpt(feature).tolist()
                 print(f'{h5_file}: {temporal_segment}')
 
                 # save to json file temporal_segments: {}

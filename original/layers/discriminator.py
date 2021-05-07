@@ -1,11 +1,11 @@
 import torch.nn as nn
 
 class cLSTM(nn.Module):
-    def __init__(self, input_size, c_hidden):
+    def __init__(self, input_size, hidden_size, num_layers=2):
         """Discriminator LSTM"""
         super().__init__()
 
-        self.lstm = nn.LSTM(input_size, c_hidden, 2, dropout=0.5)
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers)
 
     def forward(self, features, init_hidden=None):
         """

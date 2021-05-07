@@ -6,14 +6,14 @@ from .lstmcell import StackedLSTMCell
 # Summarizer.py
 
 class sLSTM(nn.Module):
-    # input feature vector : (seq_len, 1024)
-    def __init__(self, input_size, s_hidden, num_layer=2):
+    def __init__(self, input_size, hidden_size, num_layers=2):
+        """Scoring LSTM"""
         super().__init__()
 
-        self.lstm = nn.LSTM(input_size, s_hidden, num_layer, bidirectional=True, dropout=0.5)
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, bidirectional=True)
         self.out = nn.Sequential(
-            nn.Linear(s_hidden * 2, 1),
-            nn.Sigmoid())# SUM-GAN_sup 에서는 softmax 사용
+            nn.Linear(hidden_size * 2, 1),  # bidirection => scalar
+            nn.Sigmoid())
 
     def forward(self, features):
         """
@@ -37,17 +37,18 @@ class sLSTM(nn.Module):
         return scores
 
 class eLSTM(nn.Module):
-    def __init__(self, input_size, e_hidden, d_hidden):
+    def __init__(self, input_size, hidden_size, num_layers=2):
+        """Encoder LSTM"""
         super().__init__()
-        # input 1024 받아서 2048 unit의 hidden state
 
-        self.lstm = nn.LSTM(input_size, e_hidden, 2, dropout=0.5)
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers)
+
+        self.linear_mu = nn.Linear(hidden_size, hidden_size)
+        self.linear_var = nn.Linear(hidden_size, hidden_size)
 
         # VAE에서 사용할 확률분호의 평균과 분산.
         # 분산은 이후에 log를 취하던데 log_var 를 KL_loss를 구할 때 사용하니까 그런듯
         # 근데 얘네 왜 forward 에서 사용안할까?
-        self.linear_mu = nn.Linear(e_hidden, e_hidden)
-        self.linear_var = nn.Linear(e_hidden, e_hidden)
 
     # 인풋으로 [seq_len, 1, 1024]이 들어옴
     def forward(self, frame_features):
@@ -55,21 +56,18 @@ class eLSTM(nn.Module):
         #위에서 설명했듯이 메모리 직렬화
         self.lstm.flatten_parameters()
 
-        # frame_features [seq_len, 1, 1024]
-        # h_last [num_layer=2, 1, 2048]
-        # c_last [num_layer=2, 1, 2048]
         _, (h_last, c_last) = self.lstm(frame_features)
 
         return (h_last, c_last)
 
 
 class dLSTM(nn.Module):
-    def __init__(self, input_size, e_hidden, d_hidden):
+    def __init__(self, input_size=2048, hidden_size=2048, num_layers=2):
+        """Decoder LSTM"""
         super().__init__()
 
-        # input param 순서가 조금 다름.
-        self.lstm_cell = StackedLSTMCell(2, input_size, d_hidden)
-        self.out = nn.Linear(d_hidden, input_size)
+        self.lstm_cell = StackedLSTMCell(num_layers, input_size, hidden_size)
+        self.out = nn.Linear(hidden_size, input_size)
 
     def forward(self, seq_len, init_hidden):    #init_hidden은 eLSTM으로부터 받아오는 것 같음.
         """
@@ -85,10 +83,7 @@ class dLSTM(nn.Module):
         batch_size = init_hidden[0].size(1) # hidden state의 batch size 1
         hidden_size = init_hidden[0].size(2) # hidden state의 hideen_size 2048
 
-        # x [1, 1024] shape의 0 tensor를 할당   # input size
-        x = Variable(torch.zeros(batch_size, 1024)).cuda()
-
-        # h, c last state of eLSTM
+        x = Variable(torch.zeros(batch_size, hidden_size)).cuda()
         h, c = init_hidden
 
         out_features = []
@@ -98,18 +93,20 @@ class dLSTM(nn.Module):
             # h: [2=num_layers, 1, hidden_size] (h from all layers)
             # c: [2=num_layers, 1, hidden_size] (c from all layers)
             (last_h, last_c), (h, c) = self.lstm_cell(x, (h, c))
-
             x = self.out(last_h)
-            out_features.append(x)
+            out_features.append(last_h)
         # list of seq_len '[1, hidden_size]-sized Variables'
         return out_features
 
 
 class VAE(nn.Module):
-    def __init__(self, input_size, e_hidden, d_hidden):
+    def __init__(self, input_size, hidden_size, num_layers=2):
         super().__init__()
-        self.e_lstm = eLSTM(input_size, e_hidden, d_hidden)
-        self.d_lstm = dLSTM(input_size, e_hidden, d_hidden)
+        self.e_lstm = eLSTM(input_size, hidden_size, num_layers)
+        self.d_lstm = dLSTM(input_size, hidden_size, num_layers)
+
+        self.softplus = nn.Softplus()
+
 
     def reparameterize(self, mu, log_variance):
         """Sample z via reparameterization trick
@@ -121,11 +118,8 @@ class VAE(nn.Module):
         """
         std = torch.exp(0.5 * log_variance)
 
-        # e ~ N(0,1) # std.size() : [2, 2048]
-
-        # 내가 수정한 코드 GPU에 한 번에 올리기
-        # epsilon = Variable(torch.randn(std.size())).cuda()
-        epsilon = Variable(torch.randn(std.size(), device=torch.device('cuda:0')))
+        # e ~ N(0,1)
+        epsilon = Variable(torch.randn(std.size())).cuda()
 
         # [num_layers, 1, hidden_size]
         return (mu + epsilon * std).unsqueeze(1)
@@ -148,17 +142,14 @@ class VAE(nn.Module):
 
         # [num_layers, hidden_size]
         h_mu = self.e_lstm.linear_mu(h)
-
-        # 의문: 여기서 왜 softplus 사용하는지 설명 안해줌!?
-        # 내가 수정한 코드 / softplus 없앴음
-        # h_log_variance = torch.log(self.e_lstm.linear_var(h))
-        # 내가 수정한 코드 / 여기서 미리 로그를 씌우지 말았어야죠 앞에다가 softplus를 할게 아니라.
-        h_log_variance = self.e_lstm.linear_var(h)
+        h_log_variance = torch.log(self.softplus(self.e_lstm.linear_var(h)))
 
         # [num_layers, 1, hidden_size]
         h = self.reparameterize(h_mu, h_log_variance)
+
         # [seq_len, 1, hidden_size]
         decoded_features = self.d_lstm(seq_len, init_hidden=(h, c))
+
         # [seq_len, 1, hidden_size]
         # reverse
         decoded_features.reverse()
@@ -167,11 +158,10 @@ class VAE(nn.Module):
 
 
 class Summarizer(nn.Module):
-    def __init__(self, input_size, s_hidden, e_hidden, d_hidden):
+    def __init__(self, input_size, hidden_size, num_layers=2):
         super().__init__()
-        self.s_lstm = sLSTM(input_size, s_hidden, 2)
-
-        self.vae = VAE(input_size, e_hidden, d_hidden)
+        self.s_lstm = sLSTM(input_size, hidden_size, num_layers)
+        self.vae = VAE(input_size, hidden_size, num_layers)
 
     def forward(self, image_features, uniform=False):
         # Apply weights

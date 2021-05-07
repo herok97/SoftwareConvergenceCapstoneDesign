@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 import torch
 import torch.nn as nn
-# StackedCell.py
+
 
 class StackedLSTMCell(nn.Module):
 
-    def __init__(self, num_layers, input_size, rnn_size):
+    def __init__(self, num_layers, input_size, rnn_size, dropout=0.0):
         super(StackedLSTMCell, self).__init__()
+        self.dropout = nn.Dropout(dropout)
         self.num_layers = num_layers
         self.layers = nn.ModuleList()
 
@@ -25,13 +25,14 @@ class StackedLSTMCell(nn.Module):
         """
         h_0, c_0 = h_c
         h_list, c_list = [], []
-
         for i, layer in enumerate(self.layers):
             # h of i-th layer
             h_i, c_i = layer(x, (h_0[i], c_0[i]))
 
             # x for next layer
             x = h_i
+            if i + 1 != self.num_layers:
+                x = self.dropout(x)
             h_list += [h_i]
             c_list += [c_i]
 

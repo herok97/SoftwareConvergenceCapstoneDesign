@@ -22,9 +22,17 @@ class Solver(object):
         self.scalar = torch.cuda.amp.GradScaler()
 
         # Build Modules
-        self.linear_compress = nn.Linear(1024, 1024).cuda()
-        self.summarizer = Summarizer(input_size=1024, s_hidden=512, e_hidden=512, d_hidden=512).cuda()
-        self.discriminator = Discriminator(input_size=1024, c_hidden=512).cuda()
+        self.linear_compress = nn.Linear(
+            self.config.input_size,
+            self.config.hidden_size).cuda()
+        self.summarizer = Summarizer(
+            input_size=self.config.hidden_size,
+            hidden_size=self.config.hidden_size,
+            num_layers=self.config.num_layers).cuda()
+        self.discriminator = Discriminator(
+            input_size=self.config.hidden_size,
+            hidden_size=self.config.hidden_size,
+            num_layers=self.config.num_layers).cuda()
         self.model = nn.ModuleList([
             self.linear_compress, self.summarizer, self.discriminator])
 

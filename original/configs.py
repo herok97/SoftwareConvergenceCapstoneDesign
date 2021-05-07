@@ -9,6 +9,8 @@ score_dir = Path('/save')
 
 class Config:
     input_size = 1024
+    hidden_size = 512
+    num_layers = 2
     video_type = 'TvSum'
     save_dir = save_dir.joinpath(video_type)
     log_dir = save_dir
