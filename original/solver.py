@@ -9,6 +9,7 @@ from layers.summarizer import Summarizer
 from layers.discriminator import Discriminator
 from utils import TensorboardWriter
 
+
 class Solver(object):
     def __init__(self, config=None, train_loader=None, test_loader=None):
         """Class that Builds, Trains and Evaluates SUM-GAN model"""
@@ -18,24 +19,24 @@ class Solver(object):
 
     def build(self):
         torch.cuda.empty_cache()
-        # 내가 추가한 코드 AMP
-        self.scalar = torch.cuda.amp.GradScaler()
-
-        # Build Modules
         self.linear_compress = nn.Linear(
             self.config.input_size,
             self.config.hidden_size).cuda()
+
         self.summarizer = Summarizer(
             input_size=self.config.hidden_size,
             hidden_size=self.config.hidden_size,
             num_layers=self.config.num_layers).cuda()
+
         self.discriminator = Discriminator(
             input_size=self.config.hidden_size,
             hidden_size=self.config.hidden_size,
             num_layers=self.config.num_layers).cuda()
+
         self.model = nn.ModuleList([
             self.linear_compress, self.summarizer, self.discriminator])
 
+        # Build Modules
         if self.config.mode == 'train':
             # Build Optimizers
             self.s_e_optimizer = optim.Adam(
@@ -128,33 +129,32 @@ class Solver(object):
                 image_features_ = Variable(image_features).cuda()
 
                 # 내가 추가한 코드 / amp
-                with torch.cuda.amp.autocast():
-                    # ---- Train sLSTM, eLSTM ----#
-                    if self.config.verbose:
-                        tqdm.write('\nTraining sLSTM and eLSTM...')
+                # ---- Train sLSTM, eLSTM ----#
+                if self.config.verbose:
+                    tqdm.write('\nTraining sLSTM and eLSTM...')
 
-                    # [seq_len, 1, hidden_size]
-                    # LSTM에 넣으려고 3-d tensor로 만듬
-                    original_features = self.linear_compress(image_features_.detach()).unsqueeze(1)
+                # [seq_len, 1, hidden_size]
+                # LSTM에 넣으려고 3-d tensor로 만듬
+                original_features = self.linear_compress(image_features_.detach()).unsqueeze(1)
 
-                    # sLSTM 부터 dSLTM 까지가 Summarizer
-                    scores, h_mu, h_log_variance, generated_features = self.summarizer(
-                        original_features)
-                    _, _, _, uniform_features = self.summarizer(
-                        original_features, uniform=True)
+                # sLSTM 부터 dSLTM 까지가 Summarizer
+                scores, h_mu, h_log_variance, generated_features = self.summarizer(
+                    original_features)
+                _, _, _, uniform_features = self.summarizer(
+                    original_features, uniform=True)
 
-                    h_origin, original_prob = self.discriminator(original_features)
-                    h_fake, fake_prob = self.discriminator(generated_features)
-                    h_uniform, uniform_prob = self.discriminator(uniform_features)
+                h_origin, original_prob = self.discriminator(original_features)
+                h_fake, fake_prob = self.discriminator(generated_features)
+                h_uniform, uniform_prob = self.discriminator(uniform_features)
 
-                    tqdm.write(
-                        f'original_p: {original_prob.data:.3f}, fake_p: {fake_prob.data:.3f}, uniform_p: {uniform_prob.data:.3f}')
+                tqdm.write(
+                    f'original_p: {original_prob.data:.3f}, fake_p: {fake_prob.data:.3f}, uniform_p: {uniform_prob.data:.3f}')
 
-                    reconstruction_loss = self.reconstruction_loss(h_origin, h_fake)
-                    prior_loss = self.prior_loss(h_mu, h_log_variance)
-                    sparsity_loss = self.sparsity_loss(scores)
-                    s_e_loss = reconstruction_loss + prior_loss + sparsity_loss
-                    torch.cuda.empty_cache()
+                reconstruction_loss = self.reconstruction_loss(h_origin, h_fake)
+                prior_loss = self.prior_loss(h_mu, h_log_variance)
+                sparsity_loss = self.sparsity_loss(scores)
+                s_e_loss = reconstruction_loss + prior_loss + sparsity_loss
+
                 tqdm.write(
                     f'recon loss {reconstruction_loss.data:.3f}, prior loss: {prior_loss.data:.3f}, sparsity loss: {sparsity_loss.data:.3f}')
 
@@ -162,87 +162,76 @@ class Solver(object):
                 self.s_e_optimizer.zero_grad()
 
                 # 내가 추가한 코드 / amp
-                self.scalar.scale(s_e_loss).backward()  # retain_graph=True)
+                s_e_loss.backward()  # retain_graph=True)
 
                 # 논문과 다른 점 / Gradient cliping
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.clip)
-                self.scalar.step(self.s_e_optimizer)
-                self.scalar.update()
-                torch.cuda.empty_cache()
+                self.s_e_optimizer.step()
                 s_e_loss_history.append(s_e_loss.data)
                 torch.cuda.empty_cache()
 
+                # ---- Train dLSTM ----#
+                if self.config.verbose:
+                    tqdm.write('Training dLSTM...')
 
-                # 내가 추가한 코드 / amp
-                with torch.cuda.amp.autocast():
+                # [seq_len, 1, hidden_size]
+                original_features = self.linear_compress(image_features_.detach()).unsqueeze(1)
 
-                    # ---- Train dLSTM ----#
+                scores, h_mu, h_log_variance, generated_features = self.summarizer(
+                    original_features)
+
+                _, _, _, uniform_features = self.summarizer(
+                    original_features, uniform=True)
+
+                h_origin, original_prob = self.discriminator(original_features)
+                h_fake, fake_prob = self.discriminator(generated_features)
+                h_uniform, uniform_prob = self.discriminator(uniform_features)
+
+                tqdm.write(
+                    f'original_p: {original_prob.data:.3f}, fake_p: {fake_prob.data:.3f}, uniform_p: {uniform_prob.data:.3f}')
+
+                reconstruction_loss = self.reconstruction_loss(h_origin, h_fake)
+                gan_loss = self.gan_loss(original_prob, fake_prob, uniform_prob)
+                d_loss = reconstruction_loss + gan_loss
+
+                self.d_optimizer.zero_grad()
+                d_loss.backward()  # retain_graph=True)
+
+                # Gradient cliping
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.clip)
+                self.d_optimizer.step()
+                d_loss_history.append(d_loss.data)
+                torch.cuda.empty_cache()
+
+                # ---- Train cLSTM ----#
+                if batch_i > self.config.discriminator_slow_start:
+                    # Maximization
+                    # 내가 추가한 코드 / amp
                     if self.config.verbose:
-                        tqdm.write('Training dLSTM...')
+                        tqdm.write('Training cLSTM...')
 
                     # [seq_len, 1, hidden_size]
                     original_features = self.linear_compress(image_features_.detach()).unsqueeze(1)
 
                     scores, h_mu, h_log_variance, generated_features = self.summarizer(
                         original_features)
-
                     _, _, _, uniform_features = self.summarizer(
                         original_features, uniform=True)
 
                     h_origin, original_prob = self.discriminator(original_features)
                     h_fake, fake_prob = self.discriminator(generated_features)
                     h_uniform, uniform_prob = self.discriminator(uniform_features)
-
+                    c_loss = -1 * self.gan_loss(original_prob, fake_prob, uniform_prob)
                     tqdm.write(
                         f'original_p: {original_prob.data:.3f}, fake_p: {fake_prob.data:.3f}, uniform_p: {uniform_prob.data:.3f}')
 
-                    reconstruction_loss = self.reconstruction_loss(h_origin, h_fake)
-                    gan_loss = self.gan_loss(original_prob, fake_prob, uniform_prob)
-                    d_loss = reconstruction_loss + gan_loss
-
-                self.d_optimizer.zero_grad()
-                self.scalar.scale(d_loss).backward()  # retain_graph=True)
-
-                # Gradient cliping
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.clip)
-                self.scalar.step(self.d_optimizer)
-                self.scalar.update()
-                torch.cuda.empty_cache()
-                d_loss_history.append(d_loss.data)
-                torch.cuda.empty_cache()
-
-
-                # ---- Train cLSTM ----#
-                if batch_i > self.config.discriminator_slow_start:
-                    # Maximization
-                    # 내가 추가한 코드 / amp
-                    with torch.cuda.amp.autocast():
-                        if self.config.verbose:
-                            tqdm.write('Training cLSTM...')
-
-                        # [seq_len, 1, hidden_size]
-                        original_features = self.linear_compress(image_features_.detach()).unsqueeze(1)
-
-                        scores, h_mu, h_log_variance, generated_features = self.summarizer(
-                            original_features)
-                        _, _, _, uniform_features = self.summarizer(
-                            original_features, uniform=True)
-
-                        h_origin, original_prob = self.discriminator(original_features)
-                        h_fake, fake_prob = self.discriminator(generated_features)
-                        h_uniform, uniform_prob = self.discriminator(uniform_features)
-                        c_loss = -1 * self.gan_loss(original_prob, fake_prob, uniform_prob)
-                        tqdm.write(
-                            f'original_p: {original_prob.data:.3f}, fake_p: {fake_prob.data:.3f}, uniform_p: {uniform_prob.data:.3f}')
-
                     self.c_optimizer.zero_grad()
-                    self.scalar.scale(c_loss).backward()
+                    c_loss.backward()
 
                     # Gradient cliping
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.clip)
 
-                    self.scalar.step(self.c_optimizer)
-                    self.scalar.update()
+                    self.c_optimizer.step()
                     torch.cuda.empty_cache()
                     c_loss_history.append(c_loss.data)
 
@@ -272,10 +261,11 @@ class Solver(object):
             self.writer.update_loss(c_loss, epoch_i, 'c_loss_epoch')
 
             # Save parameters at checkpoint every five epoch
-            if (epoch_i + 1)% 5 == 0 :
+            if (epoch_i + 1) % 5 == 0:
                 ckpt_path = str(self.config.save_dir) + f'_epoch-{epoch_i + 1}.pkl'
                 tqdm.write(f'Save parameters at {ckpt_path}')
                 torch.save(self.model.state_dict(), ckpt_path)
+
 
     def evaluate(self, model_path):
         self.model.load_state_dict(torch.load(model_path))
@@ -283,9 +273,8 @@ class Solver(object):
         self.model.eval()
 
         out_dict = {}
-
-        for video_tensor, video_name in tqdm(
-                self.test_loader, desc='Evaluate', ncols=80, leave=False):
+        print(self.test_loader)
+        for video_tensor, video_name in tqdm(self.test_loader, desc='Evaluate', ncols=80, leave=False):
             # [seq_len, batch=1, 2048]
             video_tensor = video_tensor.view(-1, self.config.input_size)
 
@@ -297,13 +286,12 @@ class Solver(object):
             # [seq_len]
             scores = self.summarizer.s_lstm(video_feature).squeeze(1)
 
-            scores = np.array(scores.data).tolist()
-
+            scores = scores.data.cpu().numpy().tolist()
+            print(scores)
             out_dict[video_name] = scores
 
             import os
-            score_save_path = self.config.score_dir.joinpath(
-                f'{os.path.splitext(os.path.basename(model_path))[0]}.json')
+            score_save_path = './' + f'{os.path.splitext(os.path.basename(model_path))[0]}.json'
             with open(score_save_path, 'w') as f:
                 tqdm.write(f'Saving score at {str(score_save_path)}.')
                 json.dump(out_dict, f)

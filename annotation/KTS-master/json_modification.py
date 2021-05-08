@@ -1,6 +1,6 @@
 import json
 import os
-
+from ortools.algorithms import pywrapknapsack_solver
 import h5py
 import numpy as np
 import torch
@@ -11,6 +11,28 @@ from tqdm import tqdm
 
 json_file_dir = 'C:/Users/01079/video_summarization_data/json_files'
 feature_file_dir = 'C:/Users/01079/video_summarization_data/h5_googlenet'
+solver = pywrapknapsack_solver.KnapsackSolver(
+    pywrapknapsack_solver.KnapsackSolver.
+        KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER, 'Knapsack')
+
+
+def knapsack(values, weights, capacities):
+    solver.Init(values, weights, capacities)
+    computed_value = solver.Solve()
+    packed_items = []
+    packed_weights = []
+    total_weight = 0
+    print('Total value =', computed_value)
+    for i in range(len(values)):
+        if solver.BestSolutionContains(i):
+            packed_items.append(i)
+            packed_weights.append(weights[0][i])
+            total_weight += weights[0][i]
+    print('Total weight:', total_weight)
+    print('Packed items:', packed_items)
+    print('Packed_weights:', packed_weights)
+    return packed_items
+
 
 '''
     Get change points from features
@@ -48,9 +70,10 @@ def score_to_keyshot(scores, temporal_segments):
     avg_scores.append(sum(scores[temporal_segments[-1]:]) / (size[-1] + 1))
 
     capacity = round(len(scores) * 0.15)
-    _, keyshot_index = knapsack.knapsack(size, avg_scores).solve(capacity)
+    keyshot_index = knapsack(avg_scores, [size], [capacity])
 
-    return keyshot_index    # keyshot_index는 temporal_segments의 인덱스 범위보다 양쪽으로 1만큼 더 큰 값을 가짐 [-[ ... ]-]
+    return keyshot_index  # keyshot_index는 temporal_segments의 인덱스 범위보다 양쪽으로 1만큼 더 큰 값을 가짐 [-[ ... ]-]
+
 
 '''
     Get feature from .h5 file

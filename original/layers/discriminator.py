@@ -26,12 +26,12 @@ class cLSTM(nn.Module):
         return last_h
 
 class Discriminator(nn.Module):
-    def __init__(self, input_size, c_hidden):
+    def __init__(self, input_size, hidden_size, num_layers=2):
         """Discriminator: cLSTM + output projection to probability"""
         super().__init__()
-        self.cLSTM = cLSTM(input_size, c_hidden)
+        self.cLSTM = cLSTM(input_size, hidden_size, num_layers)
         self.out = nn.Sequential(
-            nn.Linear(c_hidden, 1),
+            nn.Linear(hidden_size, 1),
             nn.Sigmoid())
 
     def forward(self, features):

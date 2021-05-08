@@ -4,9 +4,9 @@ from data_loader import get_loader
 
 
 if __name__ == '__main__':
-    model_path = ''
-    config = Config
+    config = Config('test')
+    print(config.video_root_dir, config.mode)
     test_loader = get_loader(config.video_root_dir, config.mode)
-    solver = Solver(config, test_loader)
+    solver = Solver(config=config, test_loader=test_loader)
     solver.build()
-    solver.evaluate(model_path)
+    solver.evaluate(config.model_path)

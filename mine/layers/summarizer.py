@@ -171,8 +171,9 @@ class Summarizer(nn.Module):
             # [seq_len, 1, 2048] * [seq_len, 1, 1]
             weighted_features = image_features * scores.view(-1, 1, 1)
         else:
-            seq_len = image_features.size(0)
-            scores = torch.rand(seq_len, 1, 1, device=torch.device('cuda:0'))
+            scores = torch.Tensor(image_features.size(0),
+                                  image_features.size(1),
+                                  image_features.size(2)).uniform_(0, 1).cuda()
             # 내가 수정한 코드 / uniform distribute 에서 추출
             # 의문: 내 생각에는 여기에 0.3? 씩이라도 붙여야 할 것 같은데.. => uniform distribution 으로 붙임
             weighted_features = image_features * scores
