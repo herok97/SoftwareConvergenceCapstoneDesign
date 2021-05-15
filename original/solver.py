@@ -9,6 +9,23 @@ from layers.summarizer import Summarizer
 from layers.discriminator import Discriminator
 from utils import TensorboardWriter
 
+def save_checkpoint(epoch, model, optimizers, path):
+    os = []
+    for optimizer in optimizers:
+        os.append(optimizer.state_dict())
+    state = {
+        'Epoch': epoch,
+        'State_dict': model.state_dict(),
+        'optimizers': os
+    }
+    torch.save(state, path)
+
+
+def load_checkpoint(model, optimizers, path):
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint['State_dict'])
+    for i, optimizer in enumerate(optimizers):
+        optimizer.load_state_dict(checkpoint['optimizers'][i])
 
 class Solver(object):
     def __init__(self, config=None, train_loader=None, test_loader=None):
@@ -277,7 +294,9 @@ class Solver(object):
                 torch.save(self.model.state_dict(), ckpt_path)
 
     def evaluate(self, model_path):
-        self.model.load_state_dict(torch.load(model_path))
+        checkpoint = torch.load(model_path)
+        self.model.load_state_dict(checkpoint['State_dict'])
+        # self.model.load_state_dict(torch.load(model_path))
 
         self.model.eval()
 
@@ -296,13 +315,11 @@ class Solver(object):
             # [seq_len]
             scores = self.summarizer.s_lstm(video_feature).squeeze(1)
 
-            scores = np.array(scores.data).tolist()
+            scores = np.array(scores.cpu().data).tolist()
 
             out_dict[video_name] = scores
 
             import os
-            score_save_path = self.config.score_dir.joinpath(
-                f'{os.path.splitext(os.path.basename(model_path))[0]}.json')
+            score_save_path = f'result.json'
             with open(score_save_path, 'w') as f:
-                tqdm.write(f'Saving score at {str(score_save_path)}.')
                 json.dump(out_dict, f)

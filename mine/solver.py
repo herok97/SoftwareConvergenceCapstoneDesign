@@ -297,7 +297,7 @@ class Solver(object):
             # [seq_len]
             scores = self.summarizer.s_lstm(video_feature).squeeze(1)
 
-            scores = np.array(scores.data).tolist()
+            scores = np.array(scores.detach().cpu()).tolist()
 
             out_dict[video_name] = scores
 

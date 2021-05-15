@@ -12,7 +12,7 @@ class Config:
         self.input_size = 1024
         self.hidden_size = 512
         self.num_layers = 2
-        self.video_type = 'TvSum'
+        self.video_type = 'OVP'
         self.save_dir = save_dir.joinpath(self.video_type)
         self.log_dir = save_dir
         self.epoch = 49
@@ -30,4 +30,4 @@ class Config:
         self.discriminator_slow_start = 0
         self.pre_trained = True
         self.model_dir = "./results/SumMe_epoch-30.pkl"
-        self.model_path = "./results/TvSum_epoch-50.pkl" # 테스트할 모델 경로
+        self.model_path = "./results/OVP_epoch-30.pkl" # 테스트할 모델 경로

@@ -52,23 +52,26 @@ class Solver(object):
 
             # 저장된 모델 불러와서 이어서 학습
             if self.config.pre_trained:
-                print('모델 가중치 가져오기')
                 load_checkpoint(self.model, self.ae_optimizer, self.config.model_dir)
 
             self.AE.train()
             self.writer = TensorboardWriter(self.config.log_dir)
 
     def train(self):
-        step = 0
-        # 이어서 학습하려면 epochs를 이어서 계산
+        # 이어서 학습하려면 epochs와 step을 이어서 계산
         if self.config.pre_trained:
             md = self.config.model_dir
             n_epochs = int(md[md.find('epoch-') + 6:md.find('pkl') - 1])
-            print(f'{n_epochs} epoch 부터 학습 시작')
             epochs = tqdm(range(n_epochs, n_epochs + self.config.n_epochs), desc='Epoch', ncols=80)
+            video_type = ['SumMe', 'TvSum', 'OVP', 'All']
+            train_example_num = [20, 40, 80, 175]
+            step = n_epochs * train_example_num[video_type.index(self.config.video_type)]
         else:
+            step = 0
             n_epochs = self.config.n_epochs
             epochs = tqdm(range(n_epochs), desc='Epoch', ncols=80)
+        print(n_epochs)
+
 
         mse_loss = nn.MSELoss()
 

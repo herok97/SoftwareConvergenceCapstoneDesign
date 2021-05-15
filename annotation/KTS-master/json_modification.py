@@ -226,12 +226,12 @@ def evaluation(keyshot_json, video_type):
                 total_f_score.append(f_score)
 
     print(
-        f'precision: {sum(total_precision) / len(total_precision)}\nrecall: {sum(total_recall) / len(total_recall)}\nf-score:{sum(total_f_score) / len(total_f_score)}')
+        f'precision: {sum(total_precision) / len(total_precision)}\nrecall: {sum(total_recall) / len(total_recall)}\nf1-score:{sum(total_f_score) / len(total_f_score)}')
 
 
 def get_duration_of_keyshot(temporal_segments, i, video_length):
     if i == len(temporal_segments):  # temporal segments 의 마지막 원소면
-        return video_length - temporal_segments[-1]  # 그 곳의 frame num 부터 마지막 frame num 까지의 길이가 duration
+        return int(video_length) - temporal_segments[-1]  # 그 곳의 frame num 부터 마지막 frame num 까지의 길이가 duration
     elif i == 0:
         return temporal_segments[0]  # temporal segmetns 의 첫 번째 원소면, temporal_segments[0] 의 값이 첫 번째 구간의 duration
     else:
@@ -239,9 +239,9 @@ def get_duration_of_keyshot(temporal_segments, i, video_length):
 
 
 def main():
-    get_base_json()
-    # get_keyshots_from_scores('TvSum_epoch-50.json', "TvSum")
-    # evaluation('./gtkeyshots-50.json', 'TvSum')
+    # get_base_json()
+    # get_keyshots_from_scores('OVP30.json', "OVP")
+    evaluation('keyshots_OVP30.json', 'OVP')
 
 
 main()

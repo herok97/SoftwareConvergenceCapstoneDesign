@@ -24,6 +24,5 @@ class Config:
         self.n_epochs = 50
         self.clip = 5.0
         self.lr = 1e-4
-        self.pre_trained = False
-        self.model_dir = "./results/OVP_epoch-50.pkl"
-        self.model_path = "./results/TvSum_epoch-50.pkl" # 테스트할 모델 경로
+        self.pre_trained = True
+        self.model_dir = "./results/All_epoch-70.pkl"
