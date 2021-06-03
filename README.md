@@ -1,15 +1,12 @@
-SoftwareConvergenceCapstoneDesign2021
+# Unsupervised Video Summarization with Adversarial LSTM Networks 모델 구현 및 성능 향상에 대한 연구
 
-### 주제: Unsupervised Video Summarization with Adversarial LSTM Networks 모델 구현 및 성능 향상에 대한 연구
+**2021-1 소프트웨어융합캡스톤디자인** 
 
-* **2021-1 소프트웨어융합캡스톤디자인** 
-* **[김영웅 (응용수학과)](https://khero97.tistory.com/)**
+**[김영웅 (응용수학과)](https://khero97.tistory.com/)**
 
+## 개요
 
-
-### 개요
-
-#### **Video Summarization**
+### **Video Summarization**
 
 - **필요성**
 
@@ -29,9 +26,9 @@ SoftwareConvergenceCapstoneDesign2021
 
   
 
-### Base Model: SUM-GAN
+## Base Model: SUM-GAN
 
-#### ([Unsupervised Video Summarization with Adversarial LSTM Networks](https://openaccess.thecvf.com/content_cvpr_2017/papers/Mahasseni_Unsupervised_Video_Summarization_CVPR_2017_paper.pdf/) )
+### ([Unsupervised Video Summarization with Adversarial LSTM Networks](https://openaccess.thecvf.com/content_cvpr_2017/papers/Mahasseni_Unsupervised_Video_Summarization_CVPR_2017_paper.pdf/) )
 
 - **SUM-GAN 모델 개요**
 
@@ -72,7 +69,7 @@ SoftwareConvergenceCapstoneDesign2021
 
 
 
-### SUM-GAN-sl
+## SUM-GAN-sl
 
 - SUM-GAN 의 불안정적인 학습 과정 개선, 평가 방식 개선, 데이터 sampling
 - 전체적인 모델 개요
@@ -85,7 +82,7 @@ SoftwareConvergenceCapstoneDesign2021
 
 
 
-### SUM-GAN-AAE
+## SUM-GAN-AAE
 
 - SUM-GAN-sl 보다 더 안정적인 학습 과정
 - 전체적인 모델 개요
@@ -96,5 +93,5 @@ SoftwareConvergenceCapstoneDesign2021
 
 
 
-### 개선점
+## 개선점
 
