@@ -33,8 +33,7 @@
   위의 논문에서는 비지도 학습을 통한 비디오 요약을 위해 SUM-GAN이라는 모델을 제시한다. 본 모델은 비디오 시퀀스를 요약하는(각 프레임 별 가중치를 곱하여) 기능을 하게 설계되었으며, 요약된 비디오와 원본 비디오 간의 차이를 최소화하는 것을 목표로 학습된다.
   학습 과정에서 사용되는 주요 구성요소로는 요약기(Summarizer)와 그 내부의 VAE(Variational Auto-Encoder), 그리고 판별기(Discriminator)가 있다.
   아래는 전체적인 모델의 모습이다.
-
-  -
+  ![](user-images.githubusercontent.com/62598121/120631026-5e410e80-c4a2-11eb-9242-bf11b7b9d779.PNG)
 
 - **Main Components**
 
