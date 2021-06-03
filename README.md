@@ -50,23 +50,18 @@
 
   
 - **Loss function** 
-  Loss funcfion 다음과 같이 정의된다.
-
   - Loss of Gan: 구별자가 재구성된 원본 비디오와 요약된 비디오를 제대로 구별하지 못하는 정도
 <p align="center">
 <img width="500" alt="GAN" src="https://user-images.githubusercontent.com/62598121/120632232-b2002780-c4a3-11eb-92e4-621ad3a2dfc0.PNG">
 </p>
-
   - Reconstruction loss: 재구성된 원본 비디오와 요약된 비디오 간의 차이
 <p align="center">
 <img width="500" alt="reconst" src="https://user-images.githubusercontent.com/62598121/120632233-b298be00-c4a3-11eb-9f14-778565294770.PNG">
 </p>
-
   - Prior loss: VAE의 분포와 주어진 사전 확률 분포의 차이
 <p align="center">
 <img width="500" alt="prior" src="https://user-images.githubusercontent.com/62598121/120632722-38b50480-c4a4-11eb-9ab9-d3600792c367.PNG">
 <p>
-
   - Sparsity loss: sLSTM으로부터 계산된 importance score의 평균과 주어진 요약 비율(0.3)의 차이
 <p align="center">
 <img width="300" alt="sparsity" src="https://user-images.githubusercontent.com/62598121/120632226-b1679100-c4a3-11eb-9bdf-6c6e4b70fa4c.PNG">
