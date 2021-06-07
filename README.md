@@ -327,6 +327,7 @@
   아래는 SUM-GAN-AAE 모델을 TvSum 데이터로 학습한 후 한 비디오에 대해 테스트한 결과이다. 모델은 비디오를 요약하기 위해 각 프레임별로 importance score를 부여하는데, 비디오의 처음과 끝에 아주 높은 점수가 부여되는 현상이 있었다. 물론 처음과 마지막이 영상에서 중요한 프레임이기는 하지만, 너무 편차가 큰 점수로 인해 중간에 있는 importance score가 무의미해질 수 있다고 판단했다.
 
   ![ip](https://user-images.githubusercontent.com/62598121/121050626-b1dd9000-c7f3-11eb-853b-326174f094a6.JPG)
+  
   따라서 기존의 Sparsity loss를 수정하고 새로운 std(standard deviation) loss를 추가했다.
 
   먼저 비디오를 구성하고 있는 프레임을 세 구간으로 균등하게 나누었다. 이후 Sparsity loss를 통해 각 구간의 importance scores의 평균이 동일하도록 하였으며, std loss를 통해 각 구간의 표준편차 또한 동일해지도록 설정했다.
