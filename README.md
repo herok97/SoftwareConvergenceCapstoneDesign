@@ -7,39 +7,39 @@
 
 <br>
 
-### 목차
+## 목차
 
-##### 1. 개요
+#### 1. 개요
 
-##### 2. SUM-GAN
+#### 2. SUM-GAN
 
-##### 3. SUM-GAN-sl
+#### 3. SUM-GAN-sl
 
-##### 4. SUM-GAN-AAE
+#### 4. SUM-GAN-AAE
 
-##### 5. 모델 학습 재현 및 개선사항
-
-<br>
+#### 5. 모델 학습 재현 및 개선사항
 
 <br>
 
-## 1. 개요
 
-- #### **비디오 요약(**Video Summarization)의 필요성
+
+# 1. 개요
+
+- ### 비디오 요약(Video Summarization)의 필요성
   
 
 여러 응용분야에서, 효율적인 비디오 분석과 자료 조사를 위한 자동화된 비디오 요약 기술이 요구되고 있다 . 응용하는 분야가 어떤 것인가에 따라 비디오 요약의 정의는 다양한데, 비디오에서 중요한 프레임들을 선택하거나(Key frame selection), 비디오 내의 유사한 프레임들을 제거하여 원본영상과 유사하게 표현함과 동시에 비디오 길이를 줄이는 방법 등이 있다. 여기서 말하고자하는 비디오 요약이란 key frame selection을 의미하며, 전체 비디오 frame들 중 중요하다고 생각되는 프레임들의 sparse subset을 선택하는 것이다.
 
 <br>
 
-- #### **비지도 학습을 통한 비디오 요약**
+- ### 비지도 학습을 통한 비디오 요약
   
 
 자동화된 Key frame 선택 모델을 만드는 것은 주로 지도 학습(Supervied Learning)을 통하여 이루어져왔다. 하지만 이는 사람이 직접 비디오 프레임에 어노테이션(참값)을 데이터셋을 구축해야한다. 또한, 비디오 요약이 비디오의 분야(domain)에 크게 종속된다는 단점이 있다.(ex 군사 영상, 홈케어 영상) 이를 극복하기 위해 비지도 학습을 통한 비디오 요약 모델이 제시되었다. 
 
 <br>
 
-- #### 주제 선택과 이전 연구
+- ### 주제 선택과 이전 연구
 
 선택한 주제는 Unsupervised Video Summarization with Adversarial LSTM Networks [(2017)](https://openaccess.thecvf.com/content_cvpr_2017/papers/Mahasseni_Unsupervised_Video_Summarization_CVPR_2017_paper.pdf/)에서 제시된 모델의 성능을 향상시키는 것이다. 이를 위해 Base Model인 SUM-GAN 모델과, 이후 발전된 형태의 SUM-GAN-sl, SUM-GAN-AAE에 대한 스터디를 진행하였다.
 
@@ -57,7 +57,7 @@
 
   아래는 전체적인 모델의 모습이다.
 
-  <img src="G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\모델상세.PNG" alt="모델상세" style="zoom:50%;" />
+  <img src="https://user-images.githubusercontent.com/62598121/121049394-9de55e80-c7f2-11eb-9c54-c83a8ac4386d.PNG" alt="모델상세" style="zoom:50%;" />
 
   <br>
 
