@@ -1,6 +1,6 @@
 **SoftwareConvergenceCapstoneDesign2021**
 
-## Unsupervised Video Summarization with Adversarial LSTM Networks 모델 구현 및 성능 향상에 대한 연구
+# Unsupervised Video Summarization with Adversarial LSTM Networks 모델 구현 및 성능 향상에 대한 연구
 
 * **2021-1 소프트웨어융합캡스톤디자인** 
 * **[김영웅 (응용수학과)](https://khero97.tistory.com/)**
@@ -23,7 +23,7 @@
 
 
 
-# 1. 개요
+## 1. 개요
 
 - ### 비디오 요약(Video Summarization)의 필요성
   
@@ -49,9 +49,9 @@
 
 ## 2. Base Model: SUM-GAN
 
-#### Unsupervised Video Summarization with Adversarial LSTM Networks [(2017)](https://openaccess.thecvf.com/content_cvpr_2017/papers/Mahasseni_Unsupervised_Video_Summarization_CVPR_2017_paper.pdf/) 
+### Unsupervised Video Summarization with Adversarial LSTM Networks [(2017)](https://openaccess.thecvf.com/content_cvpr_2017/papers/Mahasseni_Unsupervised_Video_Summarization_CVPR_2017_paper.pdf/) 
 
-- #### **SUM-GAN 모델 개요**
+- ### SUM-GAN 모델 개요
 
   위의 논문에서는 비지도 학습을 통한 비디오 요약을 위해 SUM-GAN이라는 모델을 제시한다. 본 모델은 비디오의 각 프레임별로 Importance score를 부여함으로써 비디오를 요약한다. 모델은 크게 요약기(Summarizer)와 판별기(Discriminator)로 이루어진다. 요약기는 주어진 원본 비디오를 요약하는 역할을 수행하고, 판별기는 요약된 비디오와 원본 비디오를 구별해내는 역할을 수행한다.  요약된 비디오는 VAE(Variational Auto-encoder)를 거쳐 원본 비디오와의 차이가 작아지도록 재구성(reconstruction)되며, 이후 판별기를 속이는 것을 목표로 학습된다. 이 과정에서 VAE의 Decoder와 판별기는 GAN(Generative Adversarial Network) 구조를 형성한다.
 
@@ -61,7 +61,7 @@
 
   <br>
 
-- #### **Main Components**
+- ### Main Components
 
   - **Forward**
     - 입력 비디오에 대한 프레임별 Deep feature vectors (**x**) 추출
@@ -87,17 +87,17 @@
   
   - 더 의미있는 요약을 위해 무작위로 요약하는 경우를 고려하여 패널티를 줌 (GAN loss에서 사용)
   
-      <img src="G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\forward.PNG" alt="모델상세" style="zoom:75%;" />
+      <img src="https://user-images.githubusercontent.com/62598121/121049679-e4d35400-c7f2-11eb-86f3-3bb489cfafff.PNG" alt="모델상세" style="zoom:75%;" />
 
 <br>
 
 - #### **Training Algorithm**
 
-  ![image-20210603195458220](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\Algorithm.png)
+  ![image-20210603195458220](https://user-images.githubusercontent.com/62598121/121049754-f4eb3380-c7f2-11eb-9565-4d4be9abf493.PNG)
 
   <br>
 
-- #### **Datasets**
+- ### Datasets
 
   - SumMe 
     - 25개의 다양한 주제의 비디오
@@ -115,7 +115,7 @@
 
 <br>
 
-- #### **Evaluation Setup**(with single gtscore)
+- ### Evaluation Setup(with single gtscore)
 
   - 평가는 keyshot-based metric을 사용하였다. keyshot-based metric을 간단히 설명하면 다음과 같다.
     - KTS(Kernel based Temporal segmentation)를 사용하여 keyshot이라는 구간으로 이루어진 영상의 파티션을 구함
@@ -124,21 +124,21 @@
 
 <br>
 
-- #### **Results**
+- ### Results
 
   - SUM-GAN 모델과 여러 가지 Variants model의 성능 (single gtscore)
 
-    ![selfbench](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\selfbench.PNG)
+    ![selfbench](https://user-images.githubusercontent.com/62598121/121049840-0a605d80-c7f3-11eb-85d1-68e5e6272840.PNG)
 
-<br><br>
+<br>
 
 <br>
 
 ## 3. SUM-GAN-sl
 
-#### A Stepwise, Label-based Approach for Improving the Adversarial Training in Unsupervised Video Summarization [(2019)](https://qmro.qmul.ac.uk/xmlui/bitstream/handle/123456789/62042/Apostolidis%20A%20Stepwise,%20Label%202019%20Accepted.pdf?sequence=15/) 
+### A Stepwise, Label-based Approach for Improving the Adversarial Training in Unsupervised Video Summarization [(2019)](https://qmro.qmul.ac.uk/xmlui/bitstream/handle/123456789/62042/Apostolidis%20A%20Stepwise,%20Label%202019%20Accepted.pdf?sequence=15/) 
 
-- #### **개요**
+- ### 개요
 
   본 논문에서는 적대적 방법의 비지도학습을 통한 비디오 요약의 효율성과 성능을 향상시키기 위한 방법을 제시하였다. 그 시작점은 위에서 설명한 SUM-GAN 모델이다. 제안된 모델에서는 기존 모델의 앞단에 linear compression 층을 추가하고 뒤에서 사용되는 LSTM들의 hidden size를 조절하여 학습 파라미터를 크게 줄였으며, 학습과정에서 stepwise, label-based learning process를 사용하여 Generator와 Discriminator의 적대적 관계 망을 효율적으로 학습할 수 있도록 했다. 
 
@@ -146,9 +146,9 @@
 
   <br>
 
-  
+ 
 
-- #### **Preliminary Study on Datasets**
+- ### Preliminary Study on Datasets
 
   - **Annotation information**
     - <u>SumMe</u>
@@ -162,7 +162,7 @@
 
   - **General Performance**
 
-    <img src="G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\score2.PNG" alt="score2" style="zoom:50%;" />
+    <img src="https://user-images.githubusercontent.com/62598121/121049930-219f4b00-c7f3-11eb-91dd-076a645061a2.PNG" alt="score2" style="zoom:50%;" />
     위의 표를 통해 기존의 비디오 요약 모델들을 살펴보면 일반적으로 SumMe 데이터에 대한 성능보다 TvSum에 대한 성능이 항상 더 좋음
 
   <br>
@@ -184,7 +184,7 @@
 
     - 데이터셋 내의 각 비디오에 대해 가장 높은 성능을 낸 human-generated summary 성능 평가
 
-  <img src="G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\preli.PNG" alt="score2" style="zoom:50%;" />
+  <img src="https://user-images.githubusercontent.com/62598121/121050079-3e3b8300-c7f3-11eb-933d-3bb0afed885d.PNG" alt="score2" style="zoom:50%;" />
 
   - **The result of insights for dataset**
 
@@ -200,7 +200,7 @@
 
 <br>
 
-- #### **Proposed Approach**
+- ### Proposed Approach
 
   - **Linear compression layer 추가**
     모델의 구조에서 Selector LSTM(sLSTM)의 앞에 Linear compression layer를 추가하여 입력 시퀀스의 차원을 줄였다. 학습 속도 면에서 상당한 효율이 증가했다.
@@ -219,16 +219,16 @@
     - Third foward pass
       전체 모델을 진행하며 GAN loss를 계산한 뒤 cLSTM, Linear Compression layer 만을 업데이트 한다.
 
-      ![3step](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\3step.PNG)
+      ![3step](https://user-images.githubusercontent.com/62598121/121050168-50b5bc80-c7f3-11eb-9f12-ee2c2c8ee7ec.PNG)
 
     <br>
 
   - **Training GAN with stepwise & label-based manner **
     GAN loss를 제거하고 Discriminator loss를 아래와 같이 두 개로 나누어 도입했다. 
 
-    ![new_loss](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\new_loss.PNG)
+    ![new_loss]("https://user-images.githubusercontent.com/62598121/121050219-5b705180-c7f3-11eb-9c1d-cd7a6572bb73.PNG)
 
-    또한, Generator를 위한 loss를 별도로 아래와 같이 도입했다.![genloss](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\genloss.PNG)
+    또한, Generator를 위한 loss를 별도로 아래와 같이 도입했다.![genloss](https://user-images.githubusercontent.com/62598121/121050273-662ae680-c7f3-11eb-90d1-5d4aac5120a3.PNG)
 
   - vanilla GAN을 학습시킬 때 도입된 Binary Cross Entropy(BCE)는 더 다양한 representation을 만들기 위해 사용된 것인데, 본 모델에서는 요약된 비디오의 다양성이 비교적 중요하지 않기 때문에 이를 MSE loss로 변경하였다고 설명한다.  
 
@@ -236,7 +236,7 @@
 
     최종적으로 제안된 학습 과정은 아래와 같다.
 
-    ![forward2](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\forward2.PNG)
+    ![forward2](https://user-images.githubusercontent.com/62598121/121050319-6f1bb800-c7f3-11eb-93c0-0313bb3d316d.PNG)
 
 <br>
 
@@ -254,7 +254,7 @@
 
 - #### **Results**
 
-![slresult](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\slresult.JPG)
+![slresult](https://user-images.githubusercontent.com/62598121/121050361-78a52000-c7f3-11eb-8351-a504af302bb2.JPG)
 
 <br>
 
@@ -273,11 +273,11 @@
 
 - #### **Introducing an attention auto-encoder**(AAE)
 
-  ![AAE](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\AAE.PNG)
+  ![AAE](https://user-images.githubusercontent.com/62598121/121050428-85297880-c7f3-11eb-9a74-91fef8fb8739.PNG)
   
   Attention mechanism을 이용하기 위한 두 번째 방식은 Attention auto-encoder(AAE)이다. 아래 그림에서 추가된 Attention LSTM은 현 시점(t)의 Encoder의 출력과 이전 시점(t-1)의 decoder의 hidden state를 입력으로 받아서 Attention energe vector를 출력한다. 이 출력은 score function과 softmax layer를 거쳐 현 시점의 frame과 전체 비디오 간의 상관 관계(correlation)를 수치화한다. 이 출력을 attention weight vector라고 하며, encoder의 출력과 곱해져(MM) decoder의 다음 입력으로 주어진다.
   
-  ![(AAE2)](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\AAE2.PNG)
+  ![(AAE2)](https://user-images.githubusercontent.com/62598121/121050462-8c508680-c7f3-11eb-8c28-a323e88a257d.PNG)
   
   <br>
   
@@ -298,7 +298,7 @@
 
   이전 연구들과 공정한 비교를 위해 single ground-truth summary에 대한 F-Score를 수행하였으며, 결과는  다음과 같다.
 
-  ![result_aae](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\result_aae.JPG)
+  ![result_aae](https://user-images.githubusercontent.com/62598121/121050498-95d9ee80-c7f3-11eb-9881-09fe7fe1a818.JPG)
 
 <br>
 
@@ -313,12 +313,12 @@
   **SumMe**: **53.55%** 
   **TvSum**: **62.39%** 
 
-  ![fsc](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\fsc.JPG)
+  ![fsc](https://user-images.githubusercontent.com/62598121/121050545-9ffbed00-c7f3-11eb-8792-99a131bba756.JPG)
 
   논문의 결과와의 약간의 차이가 발생했지만 이러한 차이는 Data split 과정에서 발생한 것이라고 생각된다. 
   또한, 논문에서 설명한 것과 동일하게 GAN 구조 학습시 loss function이 Stable하게 수렴하는 것을 확인할 수 있었다.
 
-  ![tgen](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\tgen.JPG)
+  ![tgen](https://user-images.githubusercontent.com/62598121/121050591-a8ecbe80-c7f3-11eb-8466-bf33eaf3acb5.JPG)
 
 
 
@@ -326,16 +326,16 @@
 
   아래는 SUM-GAN-AAE 모델을 TvSum 데이터로 학습한 후 한 비디오에 대해 테스트한 결과이다. 모델은 비디오를 요약하기 위해 각 프레임별로 importance score를 부여하는데, 비디오의 처음과 끝에 아주 높은 점수가 부여되는 현상이 있었다. 물론 처음과 마지막이 영상에서 중요한 프레임이기는 하지만, 너무 편차가 큰 점수로 인해 중간에 있는 importance score가 무의미해질 수 있다고 판단했다.
 
-  ![ip](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\ip.JPG)
+  ![ip](https://user-images.githubusercontent.com/62598121/121050626-b1dd9000-c7f3-11eb-853b-326174f094a6.JPG)
   따라서 기존의 Sparsity loss를 수정하고 새로운 std(standard deviation) loss를 추가했다.
 
   먼저 비디오를 구성하고 있는 프레임을 세 구간으로 균등하게 나누었다. 이후 Sparsity loss를 통해 각 구간의 importance scores의 평균이 동일하도록 하였으며, std loss를 통해 각 구간의 표준편차 또한 동일해지도록 설정했다.
 
   
 
-  ![spa](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\spa.JPG)
+  ![spa](https://user-images.githubusercontent.com/62598121/121050670-bbff8e80-c7f3-11eb-996a-df7fbf21828b.JPG)
 
-  ![std](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\std.JPG)
+  ![std](https://user-images.githubusercontent.com/62598121/121050697-c3269c80-c7f3-11eb-877c-f54f79edf541.JPG)
 
   
 
@@ -343,7 +343,7 @@
 
   
 
-  ![ip2](G:\내 드라이브\4학년1학기\소프트웨어융합캡스톤디자인\사진자료\ip2.JPG)
+  ![ip2](https://user-images.githubusercontent.com/62598121/121050733-cae64100-c7f3-11eb-9b03-bc376934f4ee.JPG)
 
   전체 비디오에 대한 F-score또한 아래와 같은 결과를 보였다. SumMe 데이터의 경우 소폭 상승하였고 TvSum 데이터의 경우 소폭 하락하였다. 즉, 비디오 요약이 처음과 끝에 의존하지 않음과 동시에 F-score 면에서 큰 성능하락을 보이지 않았다고 판단할 수 있었다.
 
