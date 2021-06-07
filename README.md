@@ -172,7 +172,7 @@
 
       <br>
 
-  - **Human performance 평가 **
+  - **Human performance 평가**
 
     - 어노테이션 작업자 중 특정 작업자를 선택하여, 다른 작업자들의 어노테이션을 기준으로 성능평가했을 때의 성능 평가
 
@@ -223,10 +223,10 @@
 
     <br>
 
-  - **Training GAN with stepwise & label-based manner **
+  - **Training GAN with stepwise & label-based manner**
     GAN loss를 제거하고 Discriminator loss를 아래와 같이 두 개로 나누어 도입했다. 
 
-    ![new_loss]("https://user-images.githubusercontent.com/62598121/121050219-5b705180-c7f3-11eb-9c1d-cd7a6572bb73.PNG)
+    ![new_loss](https://user-images.githubusercontent.com/62598121/121050219-5b705180-c7f3-11eb-9c1d-cd7a6572bb73.PNG)
 
     또한, Generator를 위한 loss를 별도로 아래와 같이 도입했다.![genloss](https://user-images.githubusercontent.com/62598121/121050273-662ae680-c7f3-11eb-90d1-5d4aac5120a3.PNG)
 
@@ -252,7 +252,7 @@
 
 <br>
 
-- #### **Results**
+- ### **Results**
 
 ![slresult](https://user-images.githubusercontent.com/62598121/121050361-78a52000-c7f3-11eb-8351-a504af302bb2.JPG)
 
@@ -262,16 +262,16 @@
 
 ## 4. SUM-GAN-AAE
 
-#### A Stepwise, Label-based Approach for Improving the Adversarial Training in Unsupervised Video Summarization [(2019)](https://qmro.qmul.ac.uk/xmlui/bitstream/handle/123456789/62307/Apostolidis%20Unsupervised%20Video%20Summarization%202019%20Accepted.pdf?sequence=10) 
+### A Stepwise, Label-based Approach for Improving the Adversarial Training in Unsupervised Video Summarization [(2019)](https://qmro.qmul.ac.uk/xmlui/bitstream/handle/123456789/62307/Apostolidis%20Unsupervised%20Video%20Summarization%202019%20Accepted.pdf?sequence=10) 
 
-- #### **개요**
+- ### 개요
 
   본 논문에서는 비지도학습을 통한 비디오 요약 모델 학습을 위해 Attention mechanism을 앞선 SUM-sl 모델에 추가하여 성능을 개선시키는 두 가지 방법을 제시한다. 하나는 기존 모델의 VAE (Variational auto-encoder)구조 안에 attention layer 추가하는 것(SUM-GAN-VAAE)이고, 다른 하나는 기존 모델의 VAE 구조를 deterministic attention auto-encoder로 대체하는 것(SUM-GAN-AAE)이다.  이를 통해, 기존 모델의 학습 속도와 안정성을 향상시켰으며, Base model인 SUM-GAN에 비해 상당한 성능 향상을 보였다. 결과적으로는 SUM-GAN-AAE가 더 좋은 성능을 보여주었으므로 SUM-GAN-VAAE에 대한 자세한 설명은 생략한다.
 
 
 <br>
 
-- #### **Introducing an attention auto-encoder**(AAE)
+- ### Introducing an attention auto-encoder(AAE)
 
   ![AAE](https://user-images.githubusercontent.com/62598121/121050428-85297880-c7f3-11eb-9a74-91fef8fb8739.PNG)
   
@@ -281,7 +281,7 @@
   
   <br>
   
-- #### **Implementation details**
+- ### Implementation details
 
   - Dataset: SumMe, TvSum
   - Sampling: 2fps
@@ -294,7 +294,7 @@
   
   <br>
   
-- #### Results
+- ### Results
 
   이전 연구들과 공정한 비교를 위해 single ground-truth summary에 대한 F-Score를 수행하였으며, 결과는  다음과 같다.
 
@@ -306,7 +306,7 @@
 
 ## 5. 모델 학습 재현 및 개선사항
 
-- #### **모델 학습 재현**
+- ### 모델 학습 재현
 
   이후 모델에 개선사항을 제시하기 위해서, SUM-GAN-AAE 모델 학습을 똑같이 재현해보고 결과를 살펴보았다. 논문에서의 학습과정과 유일한 차이점은 학습 데이터와 테스트 데이터를 4:1로 split 할 때 발생한 무작위성이다. 논문에서 제시한 것과 똑같이 총 5번의 random split을 진행하여 평균 F-score를 구하였다. 결과는 아래와 같다.
 
@@ -322,7 +322,7 @@
 
 
 
-- #### 개선사항
+- ### 개선사항
 
   아래는 SUM-GAN-AAE 모델을 TvSum 데이터로 학습한 후 한 비디오에 대해 테스트한 결과이다. 모델은 비디오를 요약하기 위해 각 프레임별로 importance score를 부여하는데, 비디오의 처음과 끝에 아주 높은 점수가 부여되는 현상이 있었다. 물론 처음과 마지막이 영상에서 중요한 프레임이기는 하지만, 너무 편차가 큰 점수로 인해 중간에 있는 importance score가 무의미해질 수 있다고 판단했다.
 
