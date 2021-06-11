@@ -353,4 +353,6 @@
 
   이후 sigma 값을 조절해가며 실험을 반복했고 다음과 같은 결과를 얻을 수 있었다.
 
+
+ ![ip2](https://user-images.githubusercontent.com/62598121/121677881-742d7f80-caf1-11eb-933b-9e5f81943598.PNG)
   
